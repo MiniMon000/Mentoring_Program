@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sims 4 Modding Mentorship Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .requirement-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid #3b82f6;
+        }
+        .requirement-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .progress-bar {
+            height: 6px;
+            transition: width 0.6s ease;
+        }
+        .code-block {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #1e293b;
+            color: #f8fafc;
+        }
+        .concept-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .concept-checkbox {
+            accent-color: #3b82f6;
+        }
+    </style>
+    <script>
+        function updateProgress(sectionId, totalItems) {
+            const checkboxes = document.querySelectorAll(`#${sectionId} .concept-checkbox`);
+            const checkedCount = Array.from(checkboxes).filter(checkbox => checkbox.checked).length;
+            const progress = (checkedCount / totalItems) * 100;
+            document.getElementById(`${sectionId}-progress`).style.width = `${progress}%`;
+            document.getElementById(`${sectionId}-progress-text`).innerText = `${Math.round(progress)}%`;
+            updateTotalProgress();
+        }
+
+        function updateTotalProgress() {
+            const weights = {
+                'buff-and-loot-actions': 25,
+                'custom-interactions': 20,
+                'clone-objects-modification': 25,
+                'animation-overrides': 10,
+                'first-hand-mod': 20
+            };
+
+            let totalProgress = 0;
+            let totalWeight = 0;
+
+            for (const [section, weight] of Object.entries(weights)) {
+                const progressBar = document.getElementById(`${section}-progress`);
+                if (progressBar) {
+                    const width = parseFloat(progressBar.style.width);
+                    const sectionProgress = (width * weight) / 100; // Weighted progress
+                    totalProgress += sectionProgress; // Add weighted progress
+                    totalWeight += weight; // Sum of weights
+
+                    // Calculate the exact percentage for the current section
+                    const sectionPercentage = (width * weight) / 100; // This gives the weighted percentage
+                    console.log(`${section.replace(/-/g, ' ')} Progress: ${sectionPercentage.toFixed(2)}%`); // Log with 2 decimal places
+                }
+            }
+
+            const averageProgress = totalProgress; // Calculate average based on total weight
+            document.getElementById('total-training-progress').style.width = `${averageProgress}%`;
+            document.getElementById('total-training-progress-text').innerText = `${averageProgress.toFixed(2)}%`; // Display with 2 decimal places
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add event listeners to checkboxes
+            const sections = ['buff-and-loot-actions', 'custom-interactions', 'clone-objects-modification', 'animation-overrides', 'first-hand-mod'];
+            
+            sections.forEach(section => {
+                const checkboxes = document.querySelectorAll(`#${section} .concept-checkbox`);
+                
+                // Load saved checkbox states from localStorage
+                checkboxes.forEach((checkbox, index) => {
+                    const savedState = localStorage.getItem(`${section}-checkbox-${index}`);
+                    if (savedState === 'true') {
+                        checkbox.checked = true;
+                    }
+                    checkbox.addEventListener('change', () => {
+                        // Save checkbox state to localStorage
+                        localStorage.setItem(`${section}-checkbox-${index}`, checkbox.checked);
+                        updateProgress(section, checkboxes.length);
+                    });
+                });
+                
+                // Initialize progress on load
+                updateProgress(section, checkboxes.length);
+            });
+        });
+    </script>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-12">
+        <div class="text-center mb-12">
+            <img src="https://snootysims.com/wp-content/uploads/2024/04/cropped-snootysims-logo-1.jpg" alt="Sims 4 Modding Mentorship Program" class="mx-auto mb-6" />
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">Sims 4 Modding Mentorship Program</h1>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                A comprehensive guide for guiding modding fundamentals with implementation plans for buffs, interactions, and animations.
+            </p>
+        </div>
+
+        <!-- Total Progress Overview -->
+        <div class="bg-white rounded-lg shadow-md p-8 mb-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Training Progress Overview</h2>
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1">
+                    <div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>Total Training Completion</span>
+                        <span id="total-training-progress-text">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="progress-bar bg-blue-600 rounded-full h-3" id="total-training-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mentorship Overview -->
+        <div class="bg-white rounded-lg shadow-md p-8 mb-12">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Mentorship Framework</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="bg-blue-50 p-6 rounded-lg">
+                    <h3 class="font-medium text-blue-700 mb-3">Training Structure</h3>
+                    <ul class="space-y-2 text-gray-700">
+                        <li>✔ Weekly 1:1 mentoring sessions</li>
+                        <li>✔ Hands-on coding assignments</li>
+                        <li>✔ Pair programming for complex tasks</li>
+                        <li>✔ Code reviews with feedback</li>
+                    </ul>
+                </div>
+                <div class="bg-purple-50 p-6 rounded-lg">
+                    <h3 class="font-medium text-purple-700 mb-3">Required Tools</h3>
+                    <ul class="space-y-2 text-gray-700">
+                        <li>Sims 4 Studio</li>
+                        <li>S4PE - Package Editor</li>
+                        <li>Python for script mods</li>
+                        <li>XML editing tools</li>
+                        <li>Blender for custom animations</li>
+                    </ul>
+                </div>
+                <div class="bg-green-50 p-6 rounded-lg">
+                    <h3 class="font-medium text-green-700 mb-3">Learning Outcomes</h3>
+                    <ul class="space-y-2 text-gray-700">
+                        <li>Understand EA's tuning structure</li>
+                        <li>Develop debugging skills</li>
+                        <li>Create custom interactions</li>
+                        <li>Implement buff/loot systems</li>
+                        <li>Modify animations</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Requirements Breakdown -->
+        <div class="space-y-8">
+            <!-- Requirement 1 -->
+            <div class="requirement-card bg-white rounded-lg shadow-sm p-6" id="buff-and-loot-actions">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">1. Buff & Loot Actions</h2>
+                    <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">Priority</span>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>Training Progress</span>
+                        <span id="buff-and-loot-actions-progress-text">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="progress-bar bg-blue-600 rounded-full h-2" id="buff-and-loot-actions-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-2">Concepts to Teach</h3>
+                        <ul class="space-y-2 text-gray-600">
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('buff-and-loot-actions', 5)"> Loot Lists structure and inheritance</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('buff-and-loot-actions', 5)"> Buff tuning relationships</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('buff-and-loot-actions', 5)"> Notification systems</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('buff-and-loot-actions', 5)"> Trait addition/removal mechanics</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('buff-and-loot-actions', 5)"> Conditional logic for loot triggers</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-2">Implementation Plan</h3>
+                        <div class="code-block p-4 rounded-lg mb-3 text-sm overflow-x-auto">
+                            <T n="loot_test_buff"><br>
+                              <L n="loot_actions"><br>
+                                <U><br>
+                                  <T n="buff">{buff_to_add}</T><br>
+                                  <T n="chance">1.0</T><br>
+                                </U><br>
+                              </L><br>
+                            </T>
+                        </div>
+                        <p class="text-sm text-gray-600">Demonstrate injection via XML Injector or direct package editing</p>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="font-medium text-gray-700 mb-2">Example Assignment</h3>
+                    <p class="text-gray-600 mb-3">Create a loot action that adds a "Happy" buff when a Sim interacts with a custom object, with:</p>
+                    <ul class="list-disc pl-5 space-y-1 text-gray-600">
+                        <li>50% chance to trigger</li>
+                        <li>Custom notification with Sim name</li>
+                        <li>Duration affected by Charisma skill</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Requirement 2 -->
+            <div class="requirement-card bg-white rounded-lg shadow-sm p-6" id="custom-interactions">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">2. Custom Interactions</h2>
+                    <span class="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">Intermediate</span>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>Training Progress</span>
+                        <span id="custom-interactions-progress-text">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="progress-bar bg-purple-600 rounded-full h-2" id="custom-interactions-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-2">Concepts to Teach</h3>
+                        <ul class="space-y-2 text-gray-600">
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('custom-interactions', 5)"> Interaction XML structure</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('custom-interactions', 5)"> Social interaction tuning</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('custom-interactions', 5)"> Animation mapping</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('custom-interactions', 5)"> Object definition overrides</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('custom-interactions', 5)"> Social context testing</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-2">Implementation Steps</h3>
+                        <ol class="list-decimal pl-5 space-y-2 text-gray-600">
+                            <li>Clone existing interaction as base</li>
+                            <li>Modify display text and icon</li>
+                            <li>Add custom affordances</li>
+                            <li>Define test cases for social context</li>
+                        </ol>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="font-medium text-gray-700 mb-2">Sample Exercise</h3>
+                    <div class="code-block p-4 rounded-lg mb-3 text-sm overflow-x-auto">
+                        <I n="social_silly_dance_novel"><br>
+                          <L n="basic_extras"><br>
+                            <U><br>
+                              <T n="loot">14923<!--Funny_Dance_Loot--></T><br>
+                            </U><br>
+                          </L><br>
+                        </I>
+                    </div>
+                    <p class="text-sm text-gray-600">Task: Create a "Tell Joke" interaction that buffs both Sims based on Comedy skill</p>
+                </div>
+            </div>
+
+            <!-- Requirement 3 -->
+            <div class="requirement-card bg-white rounded-lg shadow-sm p-6" id="clone-objects-modification">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">3. Clone Objects Modification</h2>
+                    <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-medium rounded-full">Advanced</span>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>Training Progress</span>
+                        <span id="clone-objects-modification-progress-text">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="progress-bar bg-yellow-600 rounded-full h-2" id="clone-objects-modification-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-2">Key Components</h3>
+                        <ul class="space-y-2 text-gray-600">
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('clone-objects-modification', 5)"> Object Definition (.OBJD) cloning</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('clone-objects-modification', 5)"> Tuning Resource (.TUNING) inheritance</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('clone-objects-modification', 5)"> Slot and footprint adjustments</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('clone-objects-modification', 5)"> Custom function mapping</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('clone-objects-modification', 5)"> Mesh and texture replacement</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-2">Implementation Strategy</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <span class="font-medium">Step 1:</span> Use S4PE to clone base object
+                            </div>
+                            <div>
+                                <span class="font-medium">Step 2:</span> Modify interactions in tuning
+                            </div>
+                            <div>
+                                <span class="font-medium">Step 3:</span> Add custom script logic via Python
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="font-medium text-gray-700 mb-2">Project Task</h3>
+                    <p class="text-gray-600 mb-3">Create a "Magic Mirror" clone that:</p>
+                    <ul class="list-disc pl-5 space-y-1 text-gray-600">
+                        <li>Changes Sim outfits randomly</li>
+                        <li>Has cooldown period</li>
+                        <li>Chance for cursed outfit effect</li>
+                        <li>Visual effects during use</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Requirement 4 -->
+            <div class="requirement-card bg-white rounded-lg shadow-sm p-6" id="animation-overrides">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">4. Animation Overrides</h2>
+                    <span class="px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">Expert</span>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>Training Progress</span>
+                        <span id="animation-overrides-progress-text">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="progress-bar bg-red-600 rounded-full h-2" id="animation-overrides-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-2">Technical Foundation</h3>
+                        <ul class="space-y-2 text-gray-600">
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> ANIM/RIG mapping</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> Clip event sequences</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> Blender rigging for Sims</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> Animation splicing techniques</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> Emotion-state blending</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-700 mb-2">Workflow Stages</h3>
+                        <div class="space-y-2">
+                            <div class="flex items-start">
+                                <div class="bg-red-100 text-red-800 text-xs font-medium mr-2 px-2 py-0.5 rounded">1</div>
+                                <span>Extract base animation</span>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="bg-yellow-100 text-yellow-800 text-xs font-medium mr-2 px-2 py-0.5 rounded">2</div>
+                                <span>Modify in Blender/Maya</span>
+                            </div>
+                            <div class="flex items-start">
+                                <div class="bg-green-100 text-green-800 text-xs font-medium mr-2 px-2 py-0.5 rounded">3</div>
+                                <span>Recompile to .package</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="font-medium text-gray-700 mb-2">Milestone Project</h3>
+                    <div class="flex flex-col sm:flex-row gap-6">
+                        <div class="flex-1">
+                            <h4 class="text-gray-500 text-sm font-medium mb-1">Basic</h4>
+                            <p class="text-gray-600 mb-3">Replace dance animations with new sequence</p>
+                            <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/dad8c135-5d5a-45e9-bd0f-8b48c82a6731.png" alt="Side-by-side comparison of original dance animation and new custom dance moves showing exaggerated arm movements" class="rounded-lg" />
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-gray-500 text-sm font-medium mb-1">Advanced</h4>
+                            <p class="text-gray-600 mb-3">Create mood-based variations (e.g., angry dance)</p>
+                            <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/ebd334d8-e1a6-424f-a88d-acc5d152c9f1.png" alt="Quad panel showing dance animation variants for happy, angry, flirty and sad emotions" class="rounded-lg" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Requirement 5 -->
+        <div class="requirement-card bg-white rounded-lg shadow-sm p-6" id="first-hand-mod">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">5. First Hand Mod</h2>
+                <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">Beginner</span>
+            </div>
+            
+            <div class="mb-4">
+                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>Training Progress</span>
+                    <span id="first-hand-mod-progress-text">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="progress-bar bg-green-600 rounded-full h-2" id="first-hand-mod-progress" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-medium text-gray-700 mb-2">Technical Foundation</h3>
+                    <ul class="space-y-2 text-gray-600">
+                        <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('first-hand-mod', 2)"> Do the mod 1</li>
+                        <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('first-hand-mod', 2)"> Do the mod 2</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-medium text-gray-700 mb-2">Workflow Stages</h3>
+                    <div class="space-y-2">
+                        <div class="flex items-start">
+                            <div class="bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2 py-0.5 rounded">1</div>
+                            <span>Following above steps.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mentorship Checklist -->
+        <div class="bg-white rounded-lg shadow-sm mt-12 p-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Mentorship Assessment Checklist</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Skill Area</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Instruction Complete</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Practice Complete</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mastery Demonstrated</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Loot Actions</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">✅</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Custom Interactions</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">✅</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Object Cloning</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Animation Mods</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">First Mod</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
