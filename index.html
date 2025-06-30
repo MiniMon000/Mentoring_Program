@@ -90,6 +90,7 @@
                 'buff-and-loot-actions': 25,
                 'custom-interactions': 20,
                 'clone-objects-modification': 25,
+                // 'animation-overrides': 0, // This section is commented out in HTML
                 'first-hand-mod': 30
             };
 
@@ -103,7 +104,7 @@
                     totalProgress += sectionProgress; // Add weighted progress
 
                     const sectionPercentage = (width * weight) / 100;
-                    console.log(`${section.replace(/-/g, ' ')} Progress: ${sectionPercentage.toFixed(2)}%`);
+                    // console.log(`${section.replace(/-/g, ' ')} Progress: ${sectionPercentage.toFixed(2)}%`);
                 }
             }
 
@@ -112,122 +113,126 @@
             document.getElementById('total-training-progress-text').innerText = `${averageProgress.toFixed(2)}%`;
         }
 
-        // Function to save checkbox states to local storage
-        function saveCheckboxStates(data) {
-            try {
-                localStorage.setItem('simsModdingProgress', JSON.stringify(data));
-                showMessage('Progress saved locally in your browser!');
-                console.log('Checkbox states saved to local storage.');
-            } catch (e) {
-                console.error('Error saving to local storage:', e);
-                showMessage('Error saving progress locally.', true);
-            }
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
             const sections = ['buff-and-loot-actions', 'custom-interactions', 'clone-objects-modification', 'first-hand-mod'];
 
-            // Function to load checkbox states
-            async function loadCheckboxStates() {
-                let data = { checkboxStates: {} };
-
-                // 1. Try to load from local storage first
-                const savedStates = localStorage.getItem('simsModdingProgress');
-                if (savedStates) {
-                    try {
-                        data = JSON.parse(savedStates);
-                        console.log('Progress loaded from local storage.');
-                    } catch (e) {
-                        console.error('Error parsing local storage data:', e);
-                        // Fallback to fetching from GitHub if local data is corrupted
-                        data = { checkboxStates: {} };
-                    }
-                }
-
-                // 2. If no data in local storage (or corrupted), fetch from result.json on GitHub Pages
-                if (Object.keys(data.checkboxStates).length === 0) {
-                    const repoOwner = 'MiniMon000';
-                    const repoName = 'Mentoring_Program';
-                    const githubPagesBaseUrl = `https://${repoOwner.toLowerCase()}.github.io/${repoName}/`;
-                    const resultJsonUrl = `${githubPagesBaseUrl}result.json`;
-                    const cacheBuster = new Date().getTime(); // Current timestamp
-
-                    try {
-                        const response = await fetch(`${resultJsonUrl}?_t=${cacheBuster}`);
+            // Function to load checkbox states from result.json
+            function loadCheckboxStates() {
+                // Add a cache-busting parameter to the URL
+                const cacheBuster = new Date().getTime(); // Current timestamp
+                fetch(`./result.json?_t=${cacheBuster}`) 
+                    .then(response => {
                         if (!response.ok) {
                             throw new Error(`HTTP error! status: ${response.status}`);
                         }
-                        const fetchedData = await response.json();
-                        data.checkboxStates = fetchedData.checkboxStates || {};
-                        console.log('Progress loaded from GitHub result.json.');
-                    } catch (error) {
-                        console.error('Error loading result.json from GitHub:', error);
-                        showMessage('Error loading initial progress. Please check console.', true);
-                    }
-                }
-
-                // Apply the loaded states to checkboxes
-                sections.forEach(section => {
-                    const checkboxes = document.querySelectorAll(`#${section} .concept-checkbox`);
-                    checkboxes.forEach((checkbox, index) => {
-                        const checkboxKey = `${section}-checkbox-${index}`;
-                        checkbox.checked = data.checkboxStates[checkboxKey] || false; 
-                        
-                        if (!checkbox.__listenerAdded) {
-                            checkbox.addEventListener('change', () => {
-                                // Update progress display immediately
-                                updateProgress(section, checkboxes.length);
-
-                                // Collect all current checkbox states for saving
-                                const currentStates = { checkboxStates: {} };
-                                sections.forEach(s => {
-                                    document.querySelectorAll(`#${s} .concept-checkbox`).forEach((cb, idx) => {
-                                        currentStates.checkboxStates[`${s}-checkbox-${idx}`] = cb.checked;
+                        return response.json();
+                    })
+                    .then(data => {
+                        sections.forEach(section => {
+                            const checkboxes = document.querySelectorAll(`#${section} .concept-checkbox`);
+                            
+                            checkboxes.forEach((checkbox, index) => {
+                                const checkboxKey = `${section}-checkbox-${index}`;
+                                // Set checkbox state based on loaded data, default to false if not found
+                                checkbox.checked = data.checkboxStates[checkboxKey] || false; 
+                                
+                                // Add event listener only once
+                                if (!checkbox.__listenerAdded) {
+                                    checkbox.addEventListener('change', () => {
+                                        // Update the checkbox state in the data object (not directly saved here)
+                                        // The save will happen when 'Update' or 'Submit' is clicked
+                                        updateProgress(section, checkboxes.length);
                                     });
-                                });
-                                saveCheckboxStates(currentStates); // Save to local storage on every change
+                                    checkbox.__listenerAdded = true; // Mark listener as added
+                                }
                             });
-                            checkbox.__listenerAdded = true;
-                        }
+                            
+                            // Initialize progress on load for each section
+                            updateProgress(section, checkboxes.length);
+                        });
+                        showMessage('Progress loaded successfully!');
+                    })
+                    .catch(error => {
+                        console.error('Error loading result.json:', error);
+                        showMessage('Error loading progress. Please check console.', true);
                     });
-                    updateProgress(section, checkboxes.length); // Initialize progress display
-                });
-                showMessage('Progress loaded and applied!');
             }
 
-            // --- REMOVED GITHUB API WRITE FUNCTIONALITY ---
-            // The updateResultJsonOnGitHub function and its associated token are removed
-            // to prevent security vulnerabilities and GitHub blocking your commits.
-            // If you need shared progress, a backend server is required.
+            // Function to update result.json on GitHub
+            // WARNING: This function exposes your GitHub Personal Access Token.
+            // Do NOT use this in a public-facing application without a secure backend.
+            async function updateResultJsonOnGitHub() {
+                // Replace with your actual GitHub Personal Access Token
+                // IMPORTANT: This token is visible to anyone inspecting your webpage.
+                const token = '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'; // <--- UPDATE THIS LINE WITH YOUR VALID TOKEN
+                const repo = 'MiniMon000/Mentoring_Program'; // Your repository
+                const path = 'result.json'; // Path to the file in the repo
 
-            // Attach event listeners for saving to local storage
-            document.getElementById('submit-button').addEventListener('click', () => {
                 const dataToSave = { checkboxStates: {} };
                 sections.forEach(section => {
                     const checkboxes = document.querySelectorAll(`#${section} .concept-checkbox`);
                     checkboxes.forEach((checkbox, index) => {
                         const checkboxKey = `${section}-checkbox-${index}`;
-                        dataToSave.checkboxStates[checkboxKey] = checkbox.checked;
+                        dataToSave.checkboxStates[checkboxKey] = checkbox.checked; // Collect current checkbox states
                     });
                 });
-                saveCheckboxStates(dataToSave);
-            });
 
-            // The 'Update Progress' button can now just re-calculate/display,
-            // or also trigger a local save if you prefer.
-            document.getElementById('update-button').addEventListener('click', () => {
-                const dataToSave = { checkboxStates: {} };
-                sections.forEach(section => {
-                    const checkboxes = document.querySelectorAll(`#${section} .concept-checkbox`);
-                    checkboxes.forEach((checkbox, index) => {
-                        const checkboxKey = `${section}-checkbox-${index}`;
-                        dataToSave.checkboxStates[checkboxKey] = checkbox.checked;
+                try {
+                    // First, fetch the existing file to get its SHA
+                    // Add cache-busting to this fetch as well, to ensure we get the latest SHA
+                    const cacheBuster = new Date().getTime();
+                    const getResponse = await fetch(`https://api.github.com/repos/${repo}/contents/${path}?_t=${cacheBuster}`, {
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
                     });
-                });
-                saveCheckboxStates(dataToSave); // Trigger a save to local storage
-                updateTotalProgress(); // Ensure overall progress is updated
-            });
 
+                    if (!getResponse.ok) {
+                        if (getResponse.status === 404) {
+                            // File doesn't exist, proceed without SHA (for initial creation)
+                            console.warn(`${path} not found. Creating new file.`);
+                        } else {
+                            throw new Error(`Failed to fetch file SHA: ${getResponse.statusText}`);
+                        }
+                    }
+                    const fileData = getResponse.status === 200 ? await getResponse.json() : null;
+                    const sha = fileData ? fileData.sha : null; // Get the SHA of the existing file or null
+
+                    // Now update the file
+                    const putResponse = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: 'Update result.json with new checkbox states from webpage',
+                            content: btoa(JSON.stringify(dataToSave, null, 2)), // Base64 encode the content
+                            sha: sha // Include the SHA of the existing file (or null for new file)
+                        })
+                    });
+
+                    if (putResponse.ok) {
+                        console.log('File updated successfully on GitHub');
+                        showMessage('Progress saved to GitHub!', false);
+                        // Reload the page after successful update
+                        location.reload(); 
+                    } else {
+                        const errorData = await putResponse.json();
+                        console.error('Error updating file on GitHub:', putResponse.statusText, errorData);
+                        showMessage(`Error saving progress: ${errorData.message || putResponse.statusText}`, true);
+                    }
+                } catch (error) {
+                    console.error('Error during GitHub file update:', error);
+                    showMessage(`An unexpected error occurred: ${error.message}`, true);
+                }
+            }
+
+            // Attach event listeners to buttons
+            document.getElementById('submit-button').addEventListener('click', updateResultJsonOnGitHub);
+            document.getElementById('update-button').addEventListener('click', updateResultJsonOnGitHub);
 
             // Initial load of checkbox states when the page loads
             loadCheckboxStates();
@@ -279,7 +284,7 @@
             </div>
             <div class="mt-4 flex justify-between">
                 <button id="update-button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md transition duration-300 ease-in-out">Update Progress</button>
-                <button id="submit-button" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-md transition duration-300 ease-in-out">Save Progress</button>
+                <button id="submit-button" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-md transition duration-300 ease-in-out">Save to GitHub</button>
             </div>
         </div>
 
