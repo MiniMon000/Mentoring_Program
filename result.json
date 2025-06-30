@@ -14,7 +14,7 @@
     "clone-objects-modification-checkbox-2": false,
     "clone-objects-modification-checkbox-3": false,
     "clone-objects-modification-checkbox-4": false,
-    "first-hand-mod-checkbox-0": true,
-    "first-hand-mod-checkbox-1": true
+    "first-hand-mod-checkbox-0": false,
+    "first-hand-mod-checkbox-1": false
   }
 }
