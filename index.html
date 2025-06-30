@@ -47,8 +47,8 @@
                 'buff-and-loot-actions': 25,
                 'custom-interactions': 20,
                 'clone-objects-modification': 25,
-                'animation-overrides': 10,
-                'first-hand-mod': 20
+                'animation-overrides': 0,
+                'first-hand-mod': 30
             };
 
             let totalProgress = 0;
@@ -74,29 +74,124 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Add event listeners to checkboxes
             const sections = ['buff-and-loot-actions', 'custom-interactions', 'clone-objects-modification', 'animation-overrides', 'first-hand-mod'];
-            
-            sections.forEach(section => {
-                const checkboxes = document.querySelectorAll(`#${section} .concept-checkbox`);
-                
-                // Load saved checkbox states from localStorage
-                checkboxes.forEach((checkbox, index) => {
-                    const savedState = localStorage.getItem(`${section}-checkbox-${index}`);
-                    if (savedState === 'true') {
-                        checkbox.checked = true;
+
+            // Load checkbox states from result.json
+            function loadCheckboxStates() {
+                fetch('result.json')
+                    .then(response => response.json())
+                    .then(data => {
+                        sections.forEach(section => {
+                            const checkboxes = document.querySelectorAll(`#${section} .concept-checkbox`);
+                            
+                            checkboxes.forEach((checkbox, index) => {
+                                const checkboxKey = `${section}-checkbox-${index}`;
+                                checkbox.checked = data.checkboxStates[checkboxKey] || false; // Set checkbox state
+                                checkbox.addEventListener('change', () => {
+                                    // Update the checkbox state in the data object
+                                    data.checkboxStates[checkboxKey] = checkbox.checked;
+                                    updateProgress(section, checkboxes.length);
+                                });
+                            });
+                            
+                            // Initialize progress on load
+                            updateProgress(section, checkboxes.length);
+                        });
+                    })
+                    .catch(error => console.error('Error loading result.json:', error));
+            }
+
+            // Function to update result.json on GitHub
+            function updateResultJsonOnGitHub(data) {
+                const token = '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'; // Replace with your token
+                const repo = 'MiniMon000/Mentoring_Program'; // Replace with your repo
+                const path = 'result.json'; // Path to the file in the repo
+
+                // First, fetch the existing file to get its SHA
+                fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
                     }
-                    checkbox.addEventListener('change', () => {
-                        // Save checkbox state to localStorage
-                        localStorage.setItem(`${section}-checkbox-${index}`, checkbox.checked);
-                        updateProgress(section, checkboxes.length);
+                })
+                .then(response => response.json())
+                .then(fileData => {
+                    const sha = fileData.sha; // Get the SHA of the existing file
+
+                    // Now update the file
+                    return fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: 'Update result.json with new checkbox states',
+                            content: btoa(JSON.stringify(data, null, 2)), // Base64 encode the content
+                            sha: sha // Include the SHA of the existing file
+                        })
+                    });
+                })
+                .then(response => {
+                    if (response.ok) {
+                        console.log('File updated successfully');
+                    } else {
+                        console.error('Error updating file:', response.statusText);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+
+            // Submit button functionality
+            document.getElementById('submit-button').addEventListener('click', () => {
+                const data = { checkboxStates: {} };
+                sections.forEach(section => {
+                    const checkboxes = document.querySelectorAll(`#${section} .concept-checkbox`);
+                    checkboxes.forEach((checkbox, index) => {
+                        const checkboxKey = `${section}-checkbox-${index}`;
+                        data.checkboxStates[checkboxKey] = checkbox.checked; // Collect current checkbox states
                     });
                 });
-                
-                // Initialize progress on load
-                updateProgress(section, checkboxes.length);
+                updateResultJsonOnGitHub(data); // Update the JSON file on GitHub
             });
+
+            // Initial load of checkbox states
+            loadCheckboxStates();
         });
+
+    </script>
+    <style>
+        .hidden {
+            display: none;
+        }
+        .highlight {
+            background-color: #e0f7fa; /* Light blue background */
+            border-left: 4px solid #00796b; /* Darker blue left border */
+        }
+        /* .code-block {
+            background-color: #f8f8f8;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        } */
+    </style>
+    <script>
+        function toggleImplementationPlan() {
+            const implementationPlan = document.getElementById('implementation-plan');
+            const arrow = document.getElementById('arrow');
+            const header = document.querySelector('.flex.items-center.justify-between.mb-2');
+
+            if (implementationPlan.classList.contains('hidden')) {
+                implementationPlan.classList.remove('hidden');
+                arrow.innerHTML = '&#9650;'; // Up arrow
+                header.classList.add('highlight'); // Add highlight
+            } else {
+                implementationPlan.classList.add('hidden');
+                arrow.innerHTML = '&#9660;'; // Down arrow
+                header.classList.remove('highlight'); // Remove highlight
+            }
+        }
     </script>
 </head>
 <body class="bg-gray-50">
@@ -123,7 +218,12 @@
                     </div>
                 </div>
             </div>
+            <div class="mt-4 flex justify-between">
+                <button id="update-button" class="bg-blue-500 text-white px-4 py-2 rounded">Update</button>
+                <button id="submit-button" class="bg-green-500 text-white px-4 py-2 rounded">Submit</button>
+            </div>
         </div>
+
 
         <!-- Mentorship Overview -->
         <div class="bg-white rounded-lg shadow-md p-8 mb-12">
@@ -182,38 +282,57 @@
                 
                 <div class="grid md:grid-cols-2 gap-6">
                     <div>
-                        <h3 class="font-medium text-gray-700 mb-2">Concepts to Teach</h3>
+                        <h3 class="font-medium text-gray-700 mb-2">Concepts</h3>
                         <ul class="space-y-2 text-gray-600">
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('buff-and-loot-actions', 5)"> Loot Lists structure and inheritance</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('buff-and-loot-actions', 5)"> Buff tuning relationships</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('buff-and-loot-actions', 5)"> Notification systems</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('buff-and-loot-actions', 5)"> Trait addition/removal mechanics</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('buff-and-loot-actions', 5)"> Conditional logic for loot triggers</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('buff-and-loot-actions', 4)"> Loot lists structure and inheritance</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('buff-and-loot-actions', 4)"> Buff Tuning relationships</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('buff-and-loot-actions', 4)"> Additional/Removal Mechanics</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('buff-and-loot-actions', 4)"> Conditional logic for loot triggers</li>
                         </ul>
                     </div>
                     <div>
-                        <h3 class="font-medium text-gray-700 mb-2">Implementation Plan</h3>
-                        <div class="code-block p-4 rounded-lg mb-3 text-sm overflow-x-auto">
-                            <T n="loot_test_buff"><br>
-                              <L n="loot_actions"><br>
-                                <U><br>
-                                  <T n="buff">{buff_to_add}</T><br>
-                                  <T n="chance">1.0</T><br>
-                                </U><br>
-                              </L><br>
-                            </T>
+                        <div class="flex items-center justify-between mb-2 cursor-pointer" onclick="toggleImplementationPlan()">
+                            <h3 class="font-medium text-gray-700 flex-1">Implementation Plan</h3>
+                            <button id="toggle-button" class="ml-2 focus:outline-none">
+                                <span id="arrow" class="text-gray-700">&#9660;</span> <!-- Down arrow -->
+                            </button>
                         </div>
-                        <p class="text-sm text-gray-600">Demonstrate injection via XML Injector or direct package editing</p>
+                        <div id="implementation-plan" class="hidden">
+                            <p class="text-sm text-gray-600">Extract Tuning "CheatingIntensityBuff_xxx".</p>
+                            <p class="text-sm text-gray-600">Have a review with all parameters.</p>
+                            <p class="text-sm text-gray-600">Extract Tuning "Debug_Loot_Buff_DebugIntensity_xxx".</p>
+                            <p class="text-sm text-gray-600">Have a review "buffs_to_remove" and "buff".</p>
+                            <p class="text-sm text-gray-600">Extern Tuning "phone_BrowseWebsites" which is a Game Base interaction.</p>
+                            <p class="text-sm text-gray-600">Add outcome for result of Interaction.</p>
+                            <p class="text-sm text-gray-600">Add Tuning ID to Snippet.</p>
+                            <p class="text-sm text-gray-600">Add XML Injector ts4script into the Mods Folder.</p>
+                            <div class="code-block p-4 rounded-lg mb-3 text-sm overflow-x-auto">
+                                <pre>
+&lt;L n="buffs_to_remove"&gt;
+&lt;T&gt;12345&lt;!--Buff: Buff_Sad--&gt;&lt;/T&gt;
+&lt;/L&gt;</pre>
+                            </div>
+                            <div class="code-block p-4 rounded-lg mb-3 text-sm overflow-x-auto">
+                                <pre>
+&lt;U n="buff"&gt;
+&lt;V n="buff_reason" t="enabled"&gt;
+    &lt;T n="enabled"&gt;0xDE43ECF7&lt;!--(From SnootySims)--&gt;&lt;/T&gt;
+&lt;/V&gt;
+&lt;T n="buff_type"&gt;54321&lt;!--Buff: Buff_Happy--&gt;&lt;/T&gt;
+&lt;/U&gt;</pre>
+                            </div>
+                            
+                        </div>
                     </div>
                 </div>
                 
                 <div class="mt-6">
                     <h3 class="font-medium text-gray-700 mb-2">Example Assignment</h3>
-                    <p class="text-gray-600 mb-3">Create a loot action that adds a "Happy" buff when a Sim interacts with a custom object, with:</p>
+                    <p class="text-gray-600 mb-3"><span class="font-bold">"Browse Web"</span> in "Sad", be "Happy";<span class="font-bold">"Browse Web"</span> in "Happy", be "Sad":</p>
                     <ul class="list-disc pl-5 space-y-1 text-gray-600">
-                        <li>50% chance to trigger</li>
-                        <li>Custom notification with Sim name</li>
-                        <li>Duration affected by Charisma skill</li>
+                        <li>"Loot Action" for Mood "Happy"</li>
+                        <li>"Loot Action" for Mood "Sad"</li>
+                        <li>Duration "Browse Web" in Phone, check the Mood of Sim, if "Sad", be "Happy" and vice versa!</li>
                     </ul>
                 </div>
             </div>
@@ -237,38 +356,44 @@
                 
                 <div class="grid md:grid-cols-2 gap-6">
                     <div>
-                        <h3 class="font-medium text-gray-700 mb-2">Concepts to Teach</h3>
+                        <h3 class="font-medium text-gray-700 mb-2">Concepts</h3>
                         <ul class="space-y-2 text-gray-600">
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('custom-interactions', 5)"> Interaction XML structure</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('custom-interactions', 5)"> Social interaction tuning</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('custom-interactions', 5)"> Interaction from extract Tuning</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('custom-interactions', 5)"> Outcome functionals</li>
                             <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('custom-interactions', 5)"> Animation mapping</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('custom-interactions', 5)"> Object definition overrides</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('custom-interactions', 5)"> Social context testing</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('custom-interactions', 5)"> Perform functional on Phone</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('custom-interactions', 5)"> Perform functional on Computer</li>
                         </ul>
                     </div>
                     <div>
                         <h3 class="font-medium text-gray-700 mb-2">Implementation Steps</h3>
                         <ol class="list-decimal pl-5 space-y-2 text-gray-600">
-                            <li>Clone existing interaction as base</li>
-                            <li>Modify display text and icon</li>
-                            <li>Add custom affordances</li>
-                            <li>Define test cases for social context</li>
+                            <li>Clone existing interaction from Base Game.</li>
+                            <li>Modify display text at "display_name".</li>
+                            <li>Modify animation at "factory".</li>
+                            <li>Add new action from Requirement 1 to Phone at "outcome".</li>
+                            <li>Add new action from Requirement 1 to Computer at "outcome".</li>
+                            <li>Add Tuning ID to Snippet.</li>
+                            <li>Add XML Injector ts4script into the Mods Folder.</li>
                         </ol>
                     </div>
                 </div>
                 
                 <div class="mt-6">
-                    <h3 class="font-medium text-gray-700 mb-2">Sample Exercise</h3>
-                    <div class="code-block p-4 rounded-lg mb-3 text-sm overflow-x-auto">
-                        <I n="social_silly_dance_novel"><br>
-                          <L n="basic_extras"><br>
-                            <U><br>
-                              <T n="loot">14923<!--Funny_Dance_Loot--></T><br>
-                            </U><br>
-                          </L><br>
-                        </I>
-                    </div>
-                    <p class="text-sm text-gray-600">Task: Create a "Tell Joke" interaction that buffs both Sims based on Comedy skill</p>
+                    <h3 class="font-medium text-gray-700 mb-2">Example Assignment</h3>
+                    <p class="text-gray-600 mb-3"><span class="font-bold">"Browse Web"</span> in "Sad", be "Happy";<span class="font-bold">"Browse Web"</span> in "Happy", be "Sad":</p>
+                    <ul class="list-disc pl-5 space-y-1 text-gray-600">
+                    <ul><span class="font-bold">On Phone:</span></ul>
+                        <li>Animation with "Browse Web" changed to "Playing Game"</li>
+                        <li>"Loot Action" for Mood "Happy"</li>
+                        <li>"Loot Action" for Mood "Sad"</li>
+                        <li>Duration "Browse Web" in Phone, check the Mood of Sim, if "Sad", be "Happy" and vice versa!</li>
+                    <ul><span class="font-bold">On Computer:</span></ul>
+                        <li>Animation with "Browse Web" changed to "Playing Game"</li>
+                        <li>"Loot Action" for Mood "Happy"</li>
+                        <li>"Loot Action" for Mood "Sad"</li>
+                        <li>Duration "Browse Web" in Computer, check the Mood of Sim, if "Sad", be "Happy" and vice versa!</li>
+                    </ul>
                 </div>
             </div>
 
@@ -295,40 +420,44 @@
                         <ul class="space-y-2 text-gray-600">
                             <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('clone-objects-modification', 5)"> Object Definition (.OBJD) cloning</li>
                             <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('clone-objects-modification', 5)"> Tuning Resource (.TUNING) inheritance</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('clone-objects-modification', 5)"> Slot and footprint adjustments</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('clone-objects-modification', 5)"> Custom function mapping</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('clone-objects-modification', 5)"> Mesh and texture replacement</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('clone-objects-modification', 5)"> Rigs/Slot additional</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('clone-objects-modification', 5)"> Custom affordances</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('clone-objects-modification', 5)"> Perform Object functionals</li>
                         </ul>
                     </div>
                     <div>
                         <h3 class="font-medium text-gray-700 mb-2">Implementation Strategy</h3>
                         <div class="space-y-3">
                             <div>
-                                <span class="font-medium">Step 1:</span> Use S4PE to clone base object
+                                <span class="font-medium">Step 1:</span> Use S4S to clone base object
                             </div>
                             <div>
-                                <span class="font-medium">Step 2:</span> Modify interactions in tuning
+                                <span class="font-medium">Step 2:</span> Modify object's Name, Price, Description
                             </div>
                             <div>
-                                <span class="font-medium">Step 3:</span> Add custom script logic via Python
+                                <span class="font-medium">Step 3:</span> Modify object and interactions in tuning
+                            </div>
+                            <div>
+                                <span class="font-medium">Step 4:</span> Add new interactions at "_super_affordances"
+                            </div>
+                            <div>
+                                <span class="font-medium">Step 5:</span> Perform Object
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="mt-6">
-                    <h3 class="font-medium text-gray-700 mb-2">Project Task</h3>
-                    <p class="text-gray-600 mb-3">Create a "Magic Mirror" clone that:</p>
+                    <h3 class="font-medium text-gray-700 mb-2">Example Assignment</h3>
+                    <p class="text-gray-600 mb-3">Create a "Camera" object clone that:</p>
                     <ul class="list-disc pl-5 space-y-1 text-gray-600">
-                        <li>Changes Sim outfits randomly</li>
-                        <li>Has cooldown period</li>
-                        <li>Chance for cursed outfit effect</li>
-                        <li>Visual effects during use</li>
+                        <li>Change name to "Camera Selfie"</li>
+                        <li>Add new functional for Selfie available to Sim only Camera in Sim's inventory</li>
                     </ul>
                 </div>
             </div>
 
-            <!-- Requirement 4 -->
+            <!-- Requirement 4
             <div class="requirement-card bg-white rounded-lg shadow-sm p-6" id="animation-overrides">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-semibold text-gray-800">4. Animation Overrides</h2>
@@ -349,11 +478,11 @@
                     <div>
                         <h3 class="font-medium text-gray-700 mb-2">Technical Foundation</h3>
                         <ul class="space-y-2 text-gray-600">
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> ANIM/RIG mapping</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> ANIM Tuning clone</li>
                             <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> Clip event sequences</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> Blender rigging for Sims</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> Animation splicing techniques</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> Emotion-state blending</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> New ANIM additional</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> Functionality ANIM on interaction</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> Perform animation with Interaction</li>
                         </ul>
                     </div>
                     <div>
@@ -391,14 +520,14 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> -->
 
-        <!-- Requirement 5 -->
+        <!-- Requirement 4 -->
         <div class="requirement-card bg-white rounded-lg shadow-sm p-6" id="first-hand-mod">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold text-gray-800">5. First Hand Mod</h2>
-                <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">Beginner</span>
-            </div>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">4. First Hand Mod</h2>
+                    <span class="px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">Expert</span>
+                </div>
             
             <div class="mb-4">
                 <div class="flex justify-between text-sm text-gray-600 mb-1">
@@ -414,16 +543,17 @@
                 <div>
                     <h3 class="font-medium text-gray-700 mb-2">Technical Foundation</h3>
                     <ul class="space-y-2 text-gray-600">
-                        <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('first-hand-mod', 2)"> Do the mod 1</li>
-                        <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('first-hand-mod', 2)"> Do the mod 2</li>
+                        <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('first-hand-mod', 2)"> TBD</li>
+                        <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('first-hand-mod', 2)"> TBD</li>
                     </ul>
                 </div>
                 <div>
                     <h3 class="font-medium text-gray-700 mb-2">Workflow Stages</h3>
                     <div class="space-y-2">
                         <div class="flex items-start">
-                            <div class="bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2 py-0.5 rounded">1</div>
+                            <div class="bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2 py-0.5 rounded">
                             <span>Following above steps.</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -446,13 +576,13 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Loot Actions</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">✅</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
                         </tr>
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Custom Interactions</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">✅</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
                         </tr>
