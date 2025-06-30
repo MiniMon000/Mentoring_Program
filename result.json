@@ -1,12 +1,12 @@
 {
   "checkboxStates": {
-    "buff-and-loot-actions-checkbox-0": false,
-    "buff-and-loot-actions-checkbox-1": false,
-    "buff-and-loot-actions-checkbox-2": false,
-    "buff-and-loot-actions-checkbox-3": false,
+    "buff-and-loot-actions-checkbox-0": true,
+    "buff-and-loot-actions-checkbox-1": true,
+    "buff-and-loot-actions-checkbox-2": true,
+    "buff-and-loot-actions-checkbox-3": true,
     "custom-interactions-checkbox-0": false,
-    "custom-interactions-checkbox-1": true,
-    "custom-interactions-checkbox-2": true,
+    "custom-interactions-checkbox-1": false,
+    "custom-interactions-checkbox-2": false,
     "custom-interactions-checkbox-3": false,
     "custom-interactions-checkbox-4": false,
     "clone-objects-modification-checkbox-0": false,
