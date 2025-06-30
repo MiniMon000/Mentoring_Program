@@ -31,8 +31,51 @@
         .concept-checkbox {
             accent-color: #3b82f6;
         }
+        .hidden {
+            display: none;
+        }
+        .highlight {
+            background-color: #e0f7fa; /* Light blue background */
+            border-left: 4px solid #00796b; /* Darker blue left border */
+        }
+        /* Message box styling */
+        .message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50; /* Green for success */
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .message-box.error {
+            background-color: #f44336; /* Red for error */
+        }
+        .message-box.show {
+            opacity: 1;
+        }
     </style>
     <script>
+        // Function to show a temporary message box
+        function showMessage(message, isError = false) {
+            const messageBox = document.getElementById('message-box');
+            messageBox.innerText = message;
+            messageBox.classList.remove('error');
+            if (isError) {
+                messageBox.classList.add('error');
+            }
+            messageBox.classList.add('show');
+
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000); // Hide after 3 seconds
+        }
+
         function updateProgress(sectionId, totalItems) {
             const checkboxes = document.querySelectorAll(`#${sectionId} .concept-checkbox`);
             const checkedCount = Array.from(checkboxes).filter(checkbox => checkbox.checked).length;
@@ -47,12 +90,11 @@
                 'buff-and-loot-actions': 25,
                 'custom-interactions': 20,
                 'clone-objects-modification': 25,
-                'animation-overrides': 0,
+                // 'animation-overrides': 0, // This section is commented out in HTML
                 'first-hand-mod': 30
             };
 
             let totalProgress = 0;
-            let totalWeight = 0;
 
             for (const [section, weight] of Object.entries(weights)) {
                 const progressBar = document.getElementById(`${section}-progress`);
@@ -60,66 +102,111 @@
                     const width = parseFloat(progressBar.style.width);
                     const sectionProgress = (width * weight) / 100; // Weighted progress
                     totalProgress += sectionProgress; // Add weighted progress
-                    totalWeight += weight; // Sum of weights
 
-                    // Calculate the exact percentage for the current section
-                    const sectionPercentage = (width * weight) / 100; // This gives the weighted percentage
-                    console.log(`${section.replace(/-/g, ' ')} Progress: ${sectionPercentage.toFixed(2)}%`); // Log with 2 decimal places
+                    const sectionPercentage = (width * weight) / 100;
+                    console.log(`${section.replace(/-/g, ' ')} Progress: ${sectionPercentage.toFixed(2)}%`);
                 }
             }
 
-            const averageProgress = totalProgress; // Calculate average based on total weight
+            const averageProgress = totalProgress;
             document.getElementById('total-training-progress').style.width = `${averageProgress}%`;
-            document.getElementById('total-training-progress-text').innerText = `${averageProgress.toFixed(2)}%`; // Display with 2 decimal places
+            document.getElementById('total-training-progress-text').innerText = `${averageProgress.toFixed(2)}%`;
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             const sections = ['buff-and-loot-actions', 'custom-interactions', 'clone-objects-modification', 'first-hand-mod'];
 
-            // Load checkbox states from result.json
+            // Function to load checkbox states from result.json
             function loadCheckboxStates() {
-                fetch('result.json')
-                    .then(response => response.json())
+                // Construct the absolute URL for result.json to avoid URL parsing issues in some environments
+                const repoOwner = 'MiniMon000';
+                const repoName = 'Mentoring_Program';
+                // This assumes your GitHub Pages URL structure is https://<username>.github.io/<repository-name>/
+                const githubPagesBaseUrl = `https://${repoOwner.toLowerCase()}.github.io/${repoName}/`;
+                const resultJsonUrl = `${githubPagesBaseUrl}result.json`;
+
+                const cacheBuster = new Date().getTime(); // Current timestamp
+                fetch(`${resultJsonUrl}?_t=${cacheBuster}`) 
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         sections.forEach(section => {
                             const checkboxes = document.querySelectorAll(`#${section} .concept-checkbox`);
                             
                             checkboxes.forEach((checkbox, index) => {
                                 const checkboxKey = `${section}-checkbox-${index}`;
-                                checkbox.checked = data.checkboxStates[checkboxKey] || false; // Set checkbox state
-                                checkbox.addEventListener('change', () => {
-                                    // Update the checkbox state in the data object
-                                    data.checkboxStates[checkboxKey] = checkbox.checked;
-                                    updateProgress(section, checkboxes.length);
-                                });
+                                // Set checkbox state based on loaded data, default to false if not found
+                                checkbox.checked = data.checkboxStates[checkboxKey] || false; 
+                                
+                                // Add event listener only once
+                                if (!checkbox.__listenerAdded) {
+                                    checkbox.addEventListener('change', () => {
+                                        // Update the checkbox state in the data object (not directly saved here)
+                                        // The save will happen when 'Update' or 'Submit' is clicked
+                                        updateProgress(section, checkboxes.length);
+                                    });
+                                    checkbox.__listenerAdded = true; // Mark listener as added
+                                }
                             });
                             
-                            // Initialize progress on load
+                            // Initialize progress on load for each section
                             updateProgress(section, checkboxes.length);
                         });
+                        showMessage('Progress loaded successfully!');
                     })
-                    .catch(error => console.error('Error loading result.json:', error));
+                    .catch(error => {
+                        console.error('Error loading result.json:', error);
+                        showMessage('Error loading progress. Please check console.', true);
+                    });
             }
 
             // Function to update result.json on GitHub
-            function updateResultJsonOnGitHub(data) {
-                const token = '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'; // Replace with your token
-                const repo = 'MiniMon000/Mentoring_Program'; // Replace with your repo
+            // WARNING: This function exposes your GitHub Personal Access Token.
+            // Do NOT use this in a public-facing application without a secure backend.
+            async function updateResultJsonOnGitHub() {
+                // Replace with your actual GitHub Personal Access Token
+                // IMPORTANT: This token is visible to anyone inspecting your webpage.
+                const token = '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'; // <--- UPDATE THIS LINE WITH YOUR VALID TOKEN
+                const repo = 'MiniMon000/Mentoring_Program'; // Your repository
                 const path = 'result.json'; // Path to the file in the repo
 
-                // First, fetch the existing file to get its SHA
-                fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
-                    headers: {
-                        'Authorization': `token ${token}`,
-                        'Accept': 'application/vnd.github.v3+json'
+                const dataToSave = { checkboxStates: {} };
+                sections.forEach(section => {
+                    const checkboxes = document.querySelectorAll(`#${section} .concept-checkbox`);
+                    checkboxes.forEach((checkbox, index) => {
+                        const checkboxKey = `${section}-checkbox-${index}`;
+                        dataToSave.checkboxStates[checkboxKey] = checkbox.checked; // Collect current checkbox states
+                    });
+                });
+
+                try {
+                    // First, fetch the existing file to get its SHA
+                    // Add cache-busting to this fetch as well, to ensure we get the latest SHA
+                    const cacheBuster = new Date().getTime();
+                    const getResponse = await fetch(`https://api.github.com/repos/${repo}/contents/${path}?_t=${cacheBuster}`, {
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+
+                    if (!getResponse.ok) {
+                        if (getResponse.status === 404) {
+                            // File doesn't exist, proceed without SHA (for initial creation)
+                            console.warn(`${path} not found. Creating new file.`);
+                        } else {
+                            throw new Error(`Failed to fetch file SHA: ${getResponse.statusText}`);
+                        }
                     }
-                })
-                .then(response => response.json())
-                .then(fileData => {
-                    const sha = fileData.sha; // Get the SHA of the existing file
+                    const fileData = getResponse.status === 200 ? await getResponse.json() : null;
+                    const sha = fileData ? fileData.sha : null; // Get the SHA of the existing file or null
 
                     // Now update the file
-                    return fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+                    const putResponse = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
                         method: 'PUT',
                         headers: {
                             'Authorization': `token ${token}`,
@@ -127,60 +214,40 @@
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            message: 'Update result.json with new checkbox states',
-                            content: btoa(JSON.stringify(data, null, 2)), // Base64 encode the content
-                            sha: sha // Include the SHA of the existing file
+                            message: 'Update result.json with new checkbox states from webpage',
+                            content: btoa(JSON.stringify(dataToSave, null, 2)), // Base64 encode the content
+                            sha: sha // Include the SHA of the existing file (or null for new file)
                         })
                     });
-                })
-                .then(response => {
-                    if (response.ok) {
-                        console.log('File updated successfully');
+
+                    if (putResponse.ok) {
+                        console.log('File updated successfully on GitHub');
+                        showMessage('Progress saved to GitHub!', false);
+                        // Reload the page after successful update
+                        location.reload(); 
                     } else {
-                        console.error('Error updating file:', response.statusText);
+                        const errorData = await putResponse.json();
+                        console.error('Error updating file on GitHub:', putResponse.statusText, errorData);
+                        showMessage(`Error saving progress: ${errorData.message || putResponse.statusText}`, true);
                     }
-                })
-                .catch(error => console.error('Error:', error));
+                } catch (error) {
+                    console.error('Error during GitHub file update:', error);
+                    showMessage(`An unexpected error occurred: ${error.message}`, true);
+                }
             }
 
-            // Submit button functionality
-            document.getElementById('submit-button').addEventListener('click', () => {
-                const data = { checkboxStates: {} };
-                sections.forEach(section => {
-                    const checkboxes = document.querySelectorAll(`#${section} .concept-checkbox`);
-                    checkboxes.forEach((checkbox, index) => {
-                        const checkboxKey = `${section}-checkbox-${index}`;
-                        data.checkboxStates[checkboxKey] = checkbox.checked; // Collect current checkbox states
-                    });
-                });
-                updateResultJsonOnGitHub(data); // Update the JSON file on GitHub
-            });
+            // Attach event listeners to buttons
+            document.getElementById('submit-button').addEventListener('click', updateResultJsonOnGitHub);
+            document.getElementById('update-button').addEventListener('click', updateResultJsonOnGitHub);
 
-            // Initial load of checkbox states
+            // Initial load of checkbox states when the page loads
             loadCheckboxStates();
         });
 
-    </script>
-    <style>
-        .hidden {
-            display: none;
-        }
-        .highlight {
-            background-color: #e0f7fa; /* Light blue background */
-            border-left: 4px solid #00796b; /* Darker blue left border */
-        }
-        /* .code-block {
-            background-color: #f8f8f8;
-            padding: 10px;
-            border-radius: 5px;
-            overflow-x: auto;
-        } */
-    </style>
-    <script>
         function toggleImplementationPlan() {
             const implementationPlan = document.getElementById('implementation-plan');
             const arrow = document.getElementById('arrow');
-            const header = document.querySelector('.flex.items-center.justify-between.mb-2');
+            const header = document.querySelector('#buff-and-loot-actions .flex.items-center.justify-between.mb-2'); // Specific selector
 
             if (implementationPlan.classList.contains('hidden')) {
                 implementationPlan.classList.remove('hidden');
@@ -195,6 +262,9 @@
     </script>
 </head>
 <body class="bg-gray-50">
+    <!-- Message box for feedback -->
+    <div id="message-box" class="message-box"></div>
+
     <div class="container mx-auto px-4 py-12">
         <div class="text-center mb-12">
             <img src="https://snootysims.com/wp-content/uploads/2024/04/cropped-snootysims-logo-1.jpg" alt="Sims 4 Modding Mentorship Program" class="mx-auto mb-6" />
@@ -219,8 +289,8 @@
                 </div>
             </div>
             <div class="mt-4 flex justify-between">
-                <button id="update-button" class="bg-blue-500 text-white px-4 py-2 rounded">Update</button>
-                <button id="submit-button" class="bg-green-500 text-white px-4 py-2 rounded">Submit</button>
+                <button id="update-button" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md transition duration-300 ease-in-out">Update Progress</button>
+                <button id="submit-button" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg shadow-md transition duration-300 ease-in-out">Save to GitHub</button>
             </div>
         </div>
 
@@ -457,20 +527,20 @@
                 </div>
             </div>
 
-            <!-- Requirement 4
-            <div class="requirement-card bg-white rounded-lg shadow-sm p-6" id="animation-overrides">
+            <!-- Requirement 4 -->
+            <div class="requirement-card bg-white rounded-lg shadow-sm p-6" id="first-hand-mod">
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-semibold text-gray-800">4. Animation Overrides</h2>
+                    <h2 class="text-xl font-semibold text-gray-800">4. First Hand Mod</h2>
                     <span class="px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">Expert</span>
                 </div>
-                
+            
                 <div class="mb-4">
                     <div class="flex justify-between text-sm text-gray-600 mb-1">
                         <span>Training Progress</span>
-                        <span id="animation-overrides-progress-text">0%</span>
+                        <span id="first-hand-mod-progress-text">0%</span>
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="progress-bar bg-red-600 rounded-full h-2" id="animation-overrides-progress" style="width: 0%"></div>
+                        <div class="progress-bar bg-green-600 rounded-full h-2" id="first-hand-mod-progress" style="width: 0%"></div>
                     </div>
                 </div>
                 
@@ -478,87 +548,22 @@
                     <div>
                         <h3 class="font-medium text-gray-700 mb-2">Technical Foundation</h3>
                         <ul class="space-y-2 text-gray-600">
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> ANIM Tuning clone</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> Clip event sequences</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> New ANIM additional</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> Functionality ANIM on interaction</li>
-                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('animation-overrides', 5)"> Perform animation with Interaction</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('first-hand-mod', 2)"> TBD</li>
+                            <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('first-hand-mod', 2)"> TBD</li>
                         </ul>
                     </div>
                     <div>
                         <h3 class="font-medium text-gray-700 mb-2">Workflow Stages</h3>
                         <div class="space-y-2">
                             <div class="flex items-start">
-                                <div class="bg-red-100 text-red-800 text-xs font-medium mr-2 px-2 py-0.5 rounded">1</div>
-                                <span>Extract base animation</span>
-                            </div>
-                            <div class="flex items-start">
-                                <div class="bg-yellow-100 text-yellow-800 text-xs font-medium mr-2 px-2 py-0.5 rounded">2</div>
-                                <span>Modify in Blender/Maya</span>
-                            </div>
-                            <div class="flex items-start">
-                                <div class="bg-green-100 text-green-800 text-xs font-medium mr-2 px-2 py-0.5 rounded">3</div>
-                                <span>Recompile to .package</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="mt-6">
-                    <h3 class="font-medium text-gray-700 mb-2">Milestone Project</h3>
-                    <div class="flex flex-col sm:flex-row gap-6">
-                        <div class="flex-1">
-                            <h4 class="text-gray-500 text-sm font-medium mb-1">Basic</h4>
-                            <p class="text-gray-600 mb-3">Replace dance animations with new sequence</p>
-                            <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/dad8c135-5d5a-45e9-bd0f-8b48c82a6731.png" alt="Side-by-side comparison of original dance animation and new custom dance moves showing exaggerated arm movements" class="rounded-lg" />
-                        </div>
-                        <div class="flex-1">
-                            <h4 class="text-gray-500 text-sm font-medium mb-1">Advanced</h4>
-                            <p class="text-gray-600 mb-3">Create mood-based variations (e.g., angry dance)</p>
-                            <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/ebd334d8-e1a6-424f-a88d-acc5d152c9f1.png" alt="Quad panel showing dance animation variants for happy, angry, flirty and sad emotions" class="rounded-lg" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div> -->
-
-        <!-- Requirement 4 -->
-        <div class="requirement-card bg-white rounded-lg shadow-sm p-6" id="first-hand-mod">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-semibold text-gray-800">4. First Hand Mod</h2>
-                    <span class="px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">Expert</span>
-                </div>
-            
-            <div class="mb-4">
-                <div class="flex justify-between text-sm text-gray-600 mb-1">
-                    <span>Training Progress</span>
-                    <span id="first-hand-mod-progress-text">0%</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="progress-bar bg-green-600 rounded-full h-2" id="first-hand-mod-progress" style="width: 0%"></div>
-                </div>
-            </div>
-            
-            <div class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <h3 class="font-medium text-gray-700 mb-2">Technical Foundation</h3>
-                    <ul class="space-y-2 text-gray-600">
-                        <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('first-hand-mod', 2)"> TBD</li>
-                        <li class="concept-item"><input type="checkbox" class="concept-checkbox" onchange="updateProgress('first-hand-mod', 2)"> TBD</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 class="font-medium text-gray-700 mb-2">Workflow Stages</h3>
-                    <div class="space-y-2">
-                        <div class="flex items-start">
-                            <div class="bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2 py-0.5 rounded">
-                            <span>Following above steps.</span>
+                                <div class="bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2 py-0.5 rounded">
+                                <span>Following above steps.</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
         <!-- Mentorship Checklist -->
         <div class="bg-white rounded-lg shadow-sm mt-12 p-8">
