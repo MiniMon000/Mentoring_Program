@@ -4,17 +4,17 @@
     "buff-and-loot-actions-checkbox-1": false,
     "buff-and-loot-actions-checkbox-2": false,
     "buff-and-loot-actions-checkbox-3": false,
-    "custom-interactions-checkbox-0": true,
-    "custom-interactions-checkbox-1": true,
-    "custom-interactions-checkbox-2": true,
-    "custom-interactions-checkbox-3": true,
-    "custom-interactions-checkbox-4": true,
+    "custom-interactions-checkbox-0": false,
+    "custom-interactions-checkbox-1": false,
+    "custom-interactions-checkbox-2": false,
+    "custom-interactions-checkbox-3": false,
+    "custom-interactions-checkbox-4": false,
     "clone-objects-modification-checkbox-0": false,
     "clone-objects-modification-checkbox-1": false,
     "clone-objects-modification-checkbox-2": false,
     "clone-objects-modification-checkbox-3": false,
     "clone-objects-modification-checkbox-4": false,
-    "first-hand-mod-checkbox-0": true,
-    "first-hand-mod-checkbox-1": true
+    "first-hand-mod-checkbox-0": false,
+    "first-hand-mod-checkbox-1": false
   }
 }
