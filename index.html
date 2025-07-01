@@ -117,12 +117,12 @@
                             checkbox.addEventListener('change', () => {
                                 // Update the checkbox state in the data object
                                 data.checkboxStates[checkboxKey] = checkbox.checked;
-                                updateProgress(section, checkboxes.length);
+                               //  updateProgress(section, checkboxes.length);
                             });
                         });
                         
                         // Initialize progress on load
-                        updateProgress(section, checkboxes.length);
+                        // updateProgress(section, checkboxes.length);
                     });
                 })
                 .catch(error => console.error('Error loading result.json:', error));
