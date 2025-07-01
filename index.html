@@ -72,31 +72,6 @@
             document.getElementById('total-training-progress').style.width = `${averageProgress}%`;
             document.getElementById('total-training-progress-text').innerText = `${averageProgress.toFixed(2)}%`; // Display with 2 decimal places
         }
-
-        // document.addEventListener('DOMContentLoaded', () => {
-        //     // Add event listeners to checkboxes
-        //     const sections = ['buff-and-loot-actions', 'custom-interactions', 'clone-objects-modification', 'animation-overrides', 'first-hand-mod'];
-            
-        //     sections.forEach(section => {
-        //         const checkboxes = document.querySelectorAll(`#${section} .concept-checkbox`);
-                
-        //         // Load saved checkbox states from localStorage
-        //         checkboxes.forEach((checkbox, index) => {
-        //             const savedState = localStorage.getItem(`${section}-checkbox-${index}`);
-        //             if (savedState === 'true') {
-        //                 checkbox.checked = true; // Set checkbox to checked if saved state is true
-        //             }
-        //             checkbox.addEventListener('change', () => {
-        //                 // Save checkbox state to localStorage
-        //                 localStorage.setItem(`${section}-checkbox-${index}`, checkbox.checked);
-        //                 updateProgress(section, checkboxes.length); // Update progress based on current state
-        //             });
-        //         });
-                
-        //         // Initialize progress on load
-        //         updateProgress(section, checkboxes.length);
-        //     });
-        // });
     </script>
     <style>
         .hidden {
@@ -106,12 +81,6 @@
             background-color: #e0f7fa; /* Light blue background */
             border-left: 4px solid #00796b; /* Darker blue left border */
         }
-        /* .code-block {
-            background-color: #f8f8f8;
-            padding: 10px;
-            border-radius: 5px;
-            overflow-x: auto;
-        } */
     </style>
     <script>
         function toggleImplementationPlan() {
@@ -133,7 +102,7 @@
     <!-- Load json result-->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const sections = ['buff-and-loot-actions', 'custom-interactions', 'clone-objects-modification', 'animation-overrides', 'first-hand-mod'];
+            const sections = ['buff-and-loot-actions', 'custom-interactions', 'clone-objects-modification', 'first-hand-mod'];
             
             // Load checkbox states from result.json
             fetch('result.json')
